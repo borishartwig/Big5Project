@@ -16,7 +16,7 @@ from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
 # Some globs
 
-DATA_URL = "./data/data_cleaned.csv"
+DATA_URL = "./data/data.csv"
 TARGET = "target"
 RANDOM_STATE = 42
 N_ITER = 20          # max. number of hyperparameter sets per model
@@ -26,6 +26,36 @@ OUTPUT_FILE = "big5.joblib"
 # Data
 
 df = pd.read_csv(DATA_URL)
+
+# Cleaning
+
+df = df[~df.isna().any(axis=1)]
+
+STUDY_YEAR = 2008
+MAX_AGE    = 110
+
+def age_correct(n):
+    if(n + MAX_AGE > STUDY_YEAR):
+        return(n - STUDY_YEAR)
+    if(n <= MAX_AGE):
+        return(n)
+    return(n)
+
+df["age"] = df["age"].apply(age_correct)
+
+numeric_cols = list(df.columns)
+
+categorical_cols = ['gender','hand','target']
+for c in categorical_cols:
+    numeric_cols.remove(c)
+
+categorical_cols.remove('target')
+
+for c in numeric_cols:
+    df = df[df[c] > 0]
+
+# Handling
+
 X = df.drop(columns=[TARGET])
 y_raw = df[TARGET]
 
@@ -47,9 +77,6 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 # Preprocessor
-
-numeric_cols = X.select_dtypes(include="number").columns.tolist()
-categorical_cols = [c for c in X.columns if c not in numeric_cols]
 
 preprocessor = ColumnTransformer(
     transformers=[
